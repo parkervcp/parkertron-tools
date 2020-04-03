@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"path"
@@ -16,39 +17,6 @@ func main() {
 	if err := createIfDoesntExist("new-configs/"); err != nil {
 		log.Fatalf("error creating new folder")
 	}
-
-	// for _, oldCommand := range getCommands() {
-	// 	oldCommand = strings.TrimPrefix(oldCommand, "command.")
-	// 	oldCommand = strings.TrimSuffix(oldCommand, ".response")
-	// 	fmt.Printf(oldCommand + "\n")
-	// }
-
-	// for _, oldKeyword := range getKeywords() {
-	// 	oldKeyword = strings.TrimPrefix(oldKeyword, "keyword.")
-	// 	oldKeyword = strings.TrimSuffix(oldKeyword, ".response")
-	// 	oldKeyword = strings.TrimSuffix(oldKeyword, ".reaction")
-	// 	fmt.Printf(oldKeyword + "\n")
-	// }
-
-	// fmt.Printf("%s\n", getParsingImageFiletypes())
-
-	// fmt.Printf("%s\n", getParsingPasteKeys())
-
-	// for _, parseKey := range strings.Split(getParsingPasteKeys(), ", ") {
-	// 	parseKey = strings.TrimSuffix(parseKey, ".url")
-	// 	parseKey = strings.TrimSuffix(parseKey, ".format")
-	// 	parseKey = strings.TrimSuffix(parseKey, ".append")
-	// 	if parseKey == "parse.image.filetype" {
-
-	// 	} else {
-	// 		newParse := parsingConfig{
-	// 			Name:   parseKey,
-	// 			URL:    getParsingPasteString(parseKey + ".url"),
-	// 			Format: getParsingPasteString(parseKey + ".format"),
-	// 		}
-	// 		fmt.Printf("%+v\n", newParse)
-	// 	}
-	// }
 
 	for _, service := range getBotServices() {
 		switch service {
@@ -116,10 +84,21 @@ func createDiscordConf() {
 	for _, oldCommand := range getCommands() {
 		oldCommand = strings.TrimPrefix(oldCommand, "command.")
 		oldCommand = strings.TrimSuffix(oldCommand, ".response")
+
+		var newCommandReaction []string
+		for _, line := range getCommandReaction(oldCommand) {
+			newCommandReaction = append(newCommandReaction, fmt.Sprintf("'%s'", line))
+		}
+
+		var newCommandResponse []string
+		for _, line := range getCommandResonse(oldCommand) {
+			newCommandResponse = append(newCommandResponse, fmt.Sprintf("'%s'", line))
+		}
+
 		newCommands = append(newCommands, command{
 			Command:  fmt.Sprintf("%s", oldCommand),
-			Reaction: getCommandReaction(oldCommand),
-			Response: getCommandResonse(oldCommand),
+			Reaction: newCommandReaction,
+			Response: newCommandResponse,
 		})
 	}
 
@@ -135,17 +114,37 @@ func createDiscordConf() {
 		oldKeyword = strings.TrimSuffix(oldKeyword, ".reaction")
 		if strings.HasPrefix(oldKeyword, "exact.") {
 			fmt.Printf("found exact prefix for %s\n", oldKeyword)
+			// add ' marks around old reaction strings
+			var newKeywordReaction []string
+			for _, line := range getKeywordReaction(oldKeyword) {
+				newKeywordReaction = append(newKeywordReaction, fmt.Sprintf("'%s'", line))
+			}
+			// add ' marks around old response strings
+			var newKeywordResponse []string
+			for _, line := range getKeywordResponse(oldKeyword) {
+				newKeywordResponse = append(newKeywordResponse, fmt.Sprintf("'%s'", line))
+			}
 			newKeywords = append(newKeywords, keyword{
-				Keyword:  fmt.Sprintf("\"%s\"", strings.TrimPrefix(oldKeyword, "exact.")),
-				Reaction: getKeywordReaction(oldKeyword),
-				Response: getKeywordResponse(oldKeyword),
+				Keyword:  fmt.Sprintf("'%s'", strings.TrimPrefix(oldKeyword, "exact.")),
+				Reaction: newKeywordReaction,
+				Response: newKeywordResponse,
 				Exact:    true,
 			})
 		} else {
+			var newKeywordReaction []string
+			// add ' marks around old reaction strings
+			for _, line := range getKeywordReaction(oldKeyword) {
+				newKeywordReaction = append(newKeywordReaction, fmt.Sprintf("'%s'", line))
+			}
+			// add ' marks around old response strings
+			var newKeywordResponse []string
+			for _, line := range getKeywordResponse(oldKeyword) {
+				newKeywordResponse = append(newKeywordResponse, fmt.Sprintf("'%s'", line))
+			}
 			newKeywords = append(newKeywords, keyword{
-				Keyword:  fmt.Sprintf("\"%s\"", oldKeyword),
-				Reaction: getKeywordReaction(oldKeyword),
-				Response: getKeywordResponse(oldKeyword),
+				Keyword:  fmt.Sprintf("'%s'", oldKeyword),
+				Reaction: newKeywordReaction,
+				Response: newKeywordResponse,
 			})
 		}
 
@@ -166,9 +165,9 @@ func createDiscordConf() {
 		parseKey = strings.TrimSuffix(parseKey, ".url")
 
 		newParse := parsingConfig{
-			Name:   parseKey,
-			URL:    getParsingPasteString(parseKey + ".url"),
-			Format: getParsingPasteString(parseKey + ".format"),
+			Name:   fmt.Sprintf("'%s'", parseKey),
+			URL:    fmt.Sprintf("'%s'", getParsingPasteString(parseKey+".url")),
+			Format: fmt.Sprintf("'%s'", getParsingPasteString(parseKey+".format")),
 		}
 		fmt.Printf("checking on %s\n", newParse.Name)
 		if len(newParsing.Paste.Sites) == 0 {
